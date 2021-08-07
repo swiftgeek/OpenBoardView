@@ -235,10 +235,13 @@ bool GenCADFile::parse_components()
 				if (shape_name_str) {
 					mpc_ast_t *shape_ast = get_shape_by_name(shape_name_str);
 					if (shape_ast) {
+						mpc_ast_t *mirror_ast = mpc_ast_get_child(shape_ref_ast, "mirror|string");
+						bool mirror_x = has_text_content(mirror_ast, "MIRRORX");
+						bool mirror_y = has_text_content(mirror_ast, "MIRRORY");
 						brd_part.part_type = is_shape_smd(shape_ast) ? BRDPartType::SMD : BRDPartType::ThroughHole;
 						parse_shape_pins_to_component(
 									&brd_part,
-									component_rotation_angle,
+									component_rotation_angle, mirror_x, mirror_y,
 									shape_ast);
 						brd_part.end_of_pins = num_pins - 1;
 					}
@@ -263,11 +266,13 @@ bool GenCADFile::parse_components()
 
 bool GenCADFile::parse_shape_pins_to_component(BRDPart *part,
 											   double rotation_in_degrees,
+											   bool mirror_x, bool mirror_y,
 											   mpc_ast_t *shape_ast)
 {
 	double rotation_in_rads = (rotation_in_degrees * (M_PI / 180.0));
-	bool mirror_y = part->mounting_side != BRDPartMountingSide::Top;
-	if (mirror_y)
+	int mirror_x_sign = mirror_x ? (-1) : 1;
+	int mirror_y_sign = mirror_y ? (-1) : 1;
+	if (mirror_x_sign * mirror_y_sign == -1) // exatly one mirror
 	{
 		rotation_in_rads = M_PI - rotation_in_rads;
 	}
@@ -301,14 +306,8 @@ bool GenCADFile::parse_shape_pins_to_component(BRDPart *part,
 
 					BRDPoint tmpPos{};
 					x_y_ref_to_brd_point(pos_ast, &tmpPos);
-					pin.pos.x += tmpPos.x * cos_ - tmpPos.y * sin_;
-					if (!mirror_y) {
-						pin.pos.y = part->p1.y;
-						pin.pos.y += tmpPos.x * sin_ + tmpPos.y * cos_;
-					} else {
-						pin.pos.y = part->p2.y;
-						pin.pos.y -= tmpPos.x * sin_ + tmpPos.y * cos_;
-					}
+					pin.pos.x += mirror_x_sign * (tmpPos.x * cos_ - tmpPos.y * sin_);
+					pin.pos.y += mirror_y_sign * (tmpPos.x * sin_ + tmpPos.y * cos_);
 
 					pin.net = get_signal_name_for_component_pin(part->name, pin_ast);
 					if (!pin.net) {

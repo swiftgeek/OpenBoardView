@@ -47,7 +47,8 @@ private:
 	bool parse_route_vias(mpc_ast_t *route_ast);
 	bool parse_components();
 
-	bool parse_shape_pins_to_component(BRDPart *part, double rotation_in_degrees, mpc_ast_t *shape_ast);
+	bool parse_shape_pins_to_component(BRDPart *part, double rotation_in_degrees,
+									   bool mirror_x, bool mirror_y, mpc_ast_t *shape_ast);
 
 	void fill_signals_cache();
 	const char *get_signal_name_for_component_pin(const char *component_name, mpc_ast_t *pin_ast);
