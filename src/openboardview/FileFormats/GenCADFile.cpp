@@ -229,10 +229,24 @@ bool GenCADFile::parse_components()
 				}
 			}
 
+			mpc_ast_t *component_device_ast = mpc_ast_get_child(component_ast, "device_|>");
+			if (component_device_ast) {
+				char *dev_name = get_stringtoend_child(component_device_ast, "device_name");
+				// workaround for RSI-TRANSLATOR CAMCAD bad COMPONENT -> DEVICE references
+				std::replace(dev_name, dev_name + strlen(dev_name), ' ', '_');
+				if (dev_name)
+					brd_part.mfgcode = dev_name;
+			}
+
 			mpc_ast_t *shape_ref_ast = mpc_ast_get_child(component_ast, "shape_|>");
 			if (shape_ref_ast) {
 				char *shape_name_str = get_nonquoted_or_quoted_string_child(shape_ref_ast, "shape_name");
-				if (shape_name_str) {
+				if (shape_name_str && *shape_name_str) {
+					if (!brd_part.mfgcode.empty())
+					{
+						brd_part.mfgcode += " SHAPE ";
+					}
+					brd_part.mfgcode += shape_name_str;
 					mpc_ast_t *shape_ast = get_shape_by_name(shape_name_str);
 					if (shape_ast) {
 						mpc_ast_t *mirror_ast = mpc_ast_get_child(shape_ref_ast, "mirror|string");
@@ -246,15 +260,6 @@ bool GenCADFile::parse_components()
 						brd_part.end_of_pins = num_pins - 1;
 					}
 				}
-			}
-
-			mpc_ast_t *component_device_ast = mpc_ast_get_child(component_ast, "device_|>");
-			if (component_device_ast) {
-				char *dev_name = get_stringtoend_child(component_device_ast, "device_name");
-				// workaround for RSI-TRANSLATOR CAMCAD bad COMPONENT -> DEVICE references
-				std::replace(dev_name, dev_name + strlen(dev_name), ' ', '_');
-				if (dev_name)
-					brd_part.mfgcode = dev_name;
 			}
 			parts.push_back(brd_part);
 			num_parts++;
