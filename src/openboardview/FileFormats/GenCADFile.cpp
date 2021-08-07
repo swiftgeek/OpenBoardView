@@ -268,6 +268,11 @@ bool GenCADFile::parse_shape_pins_to_component(BRDPart *part,
 											   mpc_ast_t *shape_ast)
 {
 	double rotation_in_rads = (rotation_in_degrees * (M_PI / 180.0));
+	bool mirror_y = part->mounting_side != BRDPartMountingSide::Top;
+	if (mirror_y)
+	{
+		rotation_in_rads = M_PI - rotation_in_rads;
+	}
 	double cos_ = cos(rotation_in_rads);
 	double sin_ = sin(rotation_in_rads);
 
@@ -299,7 +304,7 @@ bool GenCADFile::parse_shape_pins_to_component(BRDPart *part,
 					BRDPoint tmpPos{};
 					x_y_ref_to_brd_point(pos_ast, &tmpPos);
 					pin.pos.x += tmpPos.x * cos_ - tmpPos.y * sin_;
-					if (part->mounting_side == BRDPartMountingSide::Top) {
+					if (!mirror_y) {
 						pin.pos.y = part->p1.y;
 						pin.pos.y += tmpPos.x * sin_ + tmpPos.y * cos_;
 					} else {
