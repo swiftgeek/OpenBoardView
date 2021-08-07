@@ -222,12 +222,10 @@ bool GenCADFile::parse_components()
 			mpc_ast_t *layer_ast = mpc_ast_get_child(component_ast, "named_layer|>");
 			if (layer_ast) {
 				mpc_ast_t *layer_index_ast = mpc_ast_get_child(layer_ast, "layer_name|nonquoted_string|regex");
-				if (layer_index_ast) {
-					if (strcmp(layer_index_ast->contents, "TOP") == 0) {
-						brd_part.mounting_side = BRDPartMountingSide::Top;
-					} else if (strcmp(layer_index_ast->contents, "BOTTOM") == 0) {
-						brd_part.mounting_side = BRDPartMountingSide::Bottom;
-					}
+				if (has_text_content(layer_index_ast, "TOP")) {
+					brd_part.mounting_side = BRDPartMountingSide::Top;
+				} else if (has_text_content(layer_index_ast, "BOTTOM")) {
+					brd_part.mounting_side = BRDPartMountingSide::Bottom;
 				}
 			}
 
@@ -388,14 +386,13 @@ bool GenCADFile::parse_dimension_units(mpc_ast_t *header_ast)
 		// Try UNITS <unit> format
 		mpc_ast_t *unit = mpc_ast_get_child(units, "unit|dimension|string");
 		if (unit) {
-			char *contents = unit->contents;
-			if (strlen(contents) == strlen("INCH") && strcmp("INCH", contents) == 0) {
+			if (has_text_content(unit, "INCH")) {
 				m_dimension = INCH;
-			} else if (strlen(contents) == strlen("THOU") && strcmp("THOU", contents) == 0) {
+			} else if (has_text_content(unit, "THOU")) {
 				m_dimension = THOU;
-			} else if (strlen(contents) == strlen("MM") && strcmp("MM", contents) == 0) {
+			} else if (has_text_content(unit, "MM")) {
 				m_dimension = MM;
-			} else if (strlen(contents) == strlen("MM100") && strcmp("MM100", contents) == 0) {
+			} else if (has_text_content(unit, "MM100")) {
 				m_dimension = MM100;
 			}
 			return true;
@@ -404,12 +401,12 @@ bool GenCADFile::parse_dimension_units(mpc_ast_t *header_ast)
 		// UNITS <unit> does not match -> try UNITS <unit> <dimension_unit>
 		unit = mpc_ast_get_child(units, "unit|dimension|>");
 		if (unit->children_num == 3) {
-			char *contents = unit->children[0]->contents;
-			if (strlen(contents) == strlen("USER") && strcmp("USER", contents) == 0) {
+			mpc_ast_t *start_child = unit->children[0];
+			if (has_text_content(start_child, "USER")) {
 				m_dimension = USER;
-			} else if (strlen(contents) == strlen("USERM") && strcmp("USERM", contents) == 0) {
+			} else if (has_text_content(start_child, "USERM")) {
 				m_dimension = USERCM;
-			} else if (strlen(contents) == strlen("USERMM") && strcmp("USERMM", contents) == 0) {
+			} else if (has_text_content(start_child, "USERMM")) {
 				m_dimension = USERMM;
 			}
 
@@ -676,6 +673,11 @@ char *GenCADFile::get_nonquoted_or_quoted_string_child(mpc_ast_t *parent, const 
 	return nullptr;
 }
 
+bool GenCADFile::has_text_content(mpc_ast_t *content_holder, const char *text)
+{
+	return content_holder != nullptr && (strcmp(content_holder->contents, text) == 0);
+}
+
 char *GenCADFile::get_stringtoend_child(mpc_ast_t *parent, const char *name)
 {
 	char *key = static_cast<char*>(malloc(strlen(name) + 25));
@@ -708,7 +710,6 @@ bool GenCADFile::is_padstack_smd(mpc_ast_t *padstack_ast)
 
 mpc_ast_t *GenCADFile::get_padstack_by_name(const char *padstack_name)
 {
-	size_t name_length = strlen(padstack_name);
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(padstacks_ast, "padstack|>", i);
 		if (i >= 0) {
@@ -717,10 +718,8 @@ mpc_ast_t *GenCADFile::get_padstack_by_name(const char *padstack_name)
 				continue;
 
 			mpc_ast_t *padstack_name_ast = mpc_ast_get_child(padstack_ast, "pad_name|nonquoted_string|regex");
-			if (padstack_name_ast
-					&& (strcmp(padstack_name_ast->contents, padstack_name) == 0)
-					&& strlen(padstack_name_ast->contents) == name_length) {
-				return  padstack_ast;
+			if (has_text_content(padstack_name_ast, padstack_name)) {
+				return padstack_ast;
 			}
 			i++;
 		}
@@ -730,7 +729,6 @@ mpc_ast_t *GenCADFile::get_padstack_by_name(const char *padstack_name)
 
 mpc_ast_t *GenCADFile::get_pad_by_name(const char *pad_name)
 {
-	size_t name_length = strlen(pad_name);
 	for(int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(pads_ast, "pad|>", i);
 		if (i >= 0) {
@@ -739,9 +737,8 @@ mpc_ast_t *GenCADFile::get_pad_by_name(const char *pad_name)
 				continue;
 
 			mpc_ast_t *pad_name_ast = mpc_ast_get_child(pad_ast, "pad_name|nonquoted_string|regex");
-			if (pad_name_ast&& (strcmp(pad_name_ast->contents, pad_name) == 0)
-					&& strlen(pad_name_ast->contents) == name_length) {
-				return  pad_ast;
+			if (has_text_content(pad_name_ast, pad_name)){
+				return pad_ast;
 			}
 			i++;
 		}
