@@ -1697,13 +1697,26 @@ void BoardView::SearchComponent(void) {
 		ImGui::Text("ENTER: Search, ESC: Exit, TAB: next field");
 
 		ImGui::Separator();
-		ImGui::Checkbox("Components", &m_searchComponents);
-
-		ImGui::SameLine();
-		ImGui::Checkbox("Nets", &m_searchNets);
 
 		{
-			ImGui::SameLine();
+			bool* search_components_name = Searcher::ptrToFieldEnablement(searcher.part_fields_enabled, &Component::name);
+			bool* search_components_part_number = Searcher::ptrToFieldEnablement(searcher.part_fields_enabled, &Component::mfgcode);
+			bool* search_nets_name = Searcher::ptrToFieldEnablement(searcher.net_fields_enabled, &Net::name);
+			ImGui::Checkbox("Components", search_components_name);
+			if (*search_components_name)
+			{
+				//searcher is able searching by name and part number independently.
+				//However searching only by part number causes UI problem:
+				//clicking on a name in search preview selects it for search,
+				//and if searching by name is not enabled this leads to immediately emptying search results, which is very unintuitive behavior
+				//So hide searching by part number when search by component is unchecked
+				ImGui::SameLine();
+				ImGui::Checkbox("including part number", search_components_part_number);
+			}
+			ImGui::Checkbox("Nets", search_nets_name);
+			m_searchComponents = *search_components_name;
+			m_searchNets = *search_nets_name;
+
 			ImGui::Text(" Search mode: ");
 			ImGui::SameLine();
 			if (ImGui::RadioButton("Substring", searcher.isMode(SearchMode::Sub))) {
