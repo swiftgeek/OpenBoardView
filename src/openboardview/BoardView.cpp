@@ -1657,6 +1657,7 @@ void BoardView::SearchComponent(void) {
 		//		char cs[128];
 		const char *first_button[] = {m_search[0], m_search[1], m_search[2]};
 
+		bool search_params_changed = m_showSearch; //treat initiail popup reopening similar to later search option changes
 		if (m_showSearch) {
 			m_showSearch       = false;
 			m_tooltips_enabled = false;
@@ -1702,7 +1703,7 @@ void BoardView::SearchComponent(void) {
 			bool* search_components_name = Searcher::ptrToFieldEnablement(searcher.part_fields_enabled, &Component::name);
 			bool* search_components_part_number = Searcher::ptrToFieldEnablement(searcher.part_fields_enabled, &Component::mfgcode);
 			bool* search_nets_name = Searcher::ptrToFieldEnablement(searcher.net_fields_enabled, &Net::name);
-			ImGui::Checkbox("Components", search_components_name);
+			search_params_changed |= ImGui::Checkbox("Components", search_components_name);
 			if (*search_components_name)
 			{
 				//searcher is able searching by name and part number independently.
@@ -1711,24 +1712,27 @@ void BoardView::SearchComponent(void) {
 				//and if searching by name is not enabled this leads to immediately emptying search results, which is very unintuitive behavior
 				//So hide searching by part number when search by component is unchecked
 				ImGui::SameLine();
-				ImGui::Checkbox("including part number", search_components_part_number);
+				search_params_changed |= ImGui::Checkbox("including part number", search_components_part_number);
 			}
-			ImGui::Checkbox("Nets", search_nets_name);
+			search_params_changed |= ImGui::Checkbox("Nets", search_nets_name);
 			m_searchComponents = *search_components_name;
 			m_searchNets = *search_nets_name;
 
 			ImGui::Text(" Search mode: ");
 			ImGui::SameLine();
 			if (ImGui::RadioButton("Substring", searcher.isMode(SearchMode::Sub))) {
+				search_params_changed = true;
 				searcher.setMode(SearchMode::Sub);
 			}
 			ImGui::SameLine();
 			if (ImGui::RadioButton("Prefix", searcher.isMode(SearchMode::Prefix))) {
+				search_params_changed = true;
 				searcher.setMode(SearchMode::Prefix);
 			}
 			ImGui::SameLine();
 			ImGui::PushItemWidth(-1);
 			if (ImGui::RadioButton("Whole", searcher.isMode(SearchMode::Whole))) {
+				search_params_changed = true;
 				searcher.setMode(SearchMode::Whole);
 			}
 			ImGui::PopItemWidth();
@@ -1751,13 +1755,14 @@ void BoardView::SearchComponent(void) {
 			bool hasResults = !results.first.empty() || !results.second.empty(); // We found some nets or some parts
 
 			if (searching && !hasResults) ImGui::PushStyleColor(ImGuiCol_FrameBg, 0xFF6666FF);
-			auto ret = ImGui::InputText(searchLabel.c_str(),
+			bool text_i_th_changed = ImGui::InputText(searchLabel.c_str(),
 			                            m_search[i - 1],
 			                            128,
 			                            ImGuiInputTextFlags_CharsNoBlank | (m_search[0] ? ImGuiInputTextFlags_AutoSelectAll : 0));
 			if (searching && !hasResults) ImGui::PopStyleColor();
 
-			if (ret) SearchCompound(m_search[i - 1]);
+
+			if (text_i_th_changed || (search_params_changed && searching)) SearchCompound(m_search[i - 1]);
 
 			ImGui::PopItemWidth();
 
@@ -4384,10 +4389,10 @@ void BoardView::SearchCompoundNoClear(const char *item) {
 }
 
 void BoardView::SearchCompound(const char *item) {
-	if (*item == '\0') return;
 	m_pinHighlighted.clear();
 	m_partHighlighted.clear();
 	//	ClearAllHighlights();
+	if (*item == '\0') return;
 
 	SearchCompoundNoClear(item);
 }
