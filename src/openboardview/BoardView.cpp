@@ -475,7 +475,14 @@ int BoardView::LoadFile(const filesystem::path &filepath) {
 				m_lastFileOpenWasInvalid = false;
 				m_validBoard             = true;
 			} else {
-				m_lastFileLoadError = file->error_string;
+				if (file)
+				{
+					m_lastFileLoadError = file->error_string;
+				}
+				else
+				{
+					m_lastFileLoadError = "File format not recognized";
+				}
 				m_validBoard = false;
 				delete file;
 			}
