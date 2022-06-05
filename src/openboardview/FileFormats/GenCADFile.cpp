@@ -198,9 +198,9 @@ bool GenCADFile::parse_components()
 			mpc_ast_t *component_ast = mpc_ast_get_child_lb(components_ast, "component|>", i);
 
 			BRDPart brd_part;
-			mpc_ast_t *name_ast = mpc_ast_get_child(component_ast, "component_name|nonquoted_string|regex");
-			if (name_ast) {
-				brd_part.name = name_ast->contents;
+			char *component_name = get_nonquoted_or_quoted_string_child(component_ast, "component_name");
+			if (component_name) {
+				brd_part.name = component_name;
 			}
 
 			mpc_ast_t *place_ast = mpc_ast_get_child(component_ast, "place|>");
