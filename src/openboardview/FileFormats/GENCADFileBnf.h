@@ -38,7 +38,7 @@ mirror              : ("0"|"MIRRORX"|"MIRRORY");
 pad_name            : (<nonquoted_string>|<string>);
 pad_type            : ("FINGER"|"ROUND"|"ANNULAR"|"BULLET"|"RECTANGULAR"|"HEXAGON"|"OCTAGON"|"POLYGON"|"UNKNOWN");
 part_name           : (<nonquoted_string>|<string>);
-pin_name            : <nonquoted_string>;
+pin_name            : (<nonquoted_string>|<string>);
 probe               : <string>;
 rectangle_ref       : <x_y_ref> <s>+ <width> <s>+ <height>;
 rot                 : <number>;
