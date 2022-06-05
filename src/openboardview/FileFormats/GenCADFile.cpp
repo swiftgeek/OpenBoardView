@@ -88,8 +88,9 @@ bool GenCADFile::parse_file(const std::vector<char> &buf)
 				throw std::string("Failed to parse GenCAD file: the $TRACKS section was not parsed properly");
 
 			layers_ast = mpc_ast_get_child(ast, "layers|>");
-			if (!layers_ast)
-				throw std::string("Failed to parse GenCAD file: the $LAYERS section was not parsed properly");
+			//if (!layers_ast)
+				//throw std::string("Failed to parse GenCAD file: the $LAYERS section was not parsed properly");
+        //$LAYERS is optional
 
 			routes_ast = mpc_ast_get_child(ast, "routes|>");
 			if (!routes_ast)
