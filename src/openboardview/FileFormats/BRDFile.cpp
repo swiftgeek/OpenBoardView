@@ -77,6 +77,27 @@ done:
 	return begin;
 }
 
+void BRDFileBase::AddNailsAsPins(const BRDPoint& max_point) {
+	for (auto &nail : nails) {
+		BRDPin pin;
+		pin.pos = nail.pos;
+		if (nail.side == BRDPartMountingSide::Both) {
+			pin.part = parts.size();
+			pin.side = BRDPinSide::Both;
+		} else if (nail.side == BRDPartMountingSide::Top) {
+			pin.part = parts.size();
+			pin.side = BRDPinSide::Top;
+		} else {
+			pin.pos.y = max_point.y - pin.pos.y;
+			pin.part  = parts.size() - 1;
+			pin.side = BRDPinSide::Bottom;
+		}
+		pin.probe = nail.probe;
+		pin.net   = nail.net;
+		pins.push_back(pin);
+	}
+}
+
 /*
  * Returns true if the file format seems to be BRD.
  * Uses std::string::find() on a std::string rather than strstr() on the buffer because the latter expects a null-terminated string.
@@ -196,7 +217,7 @@ BRDFile::BRDFile(std::vector<char> &buf) {
 				nail.probe = READ_UINT();
 				nail.pos.x = READ_INT();
 				nail.pos.y = READ_INT();
-				nail.side  = READ_UINT();
+				nail.side  = READ_UINT() == 1 ? BRDPartMountingSide::Top : BRDPartMountingSide::Bottom;
 				nail.net   = READ_STR();
 				nails.push_back(nail);
 			} break;
