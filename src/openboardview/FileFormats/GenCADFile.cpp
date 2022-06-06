@@ -161,9 +161,9 @@ bool GenCADFile::parse_components() {
 			mpc_ast_t *component_ast = mpc_ast_get_child_lb(components_ast, "component|>", i);
 
 			BRDPart brd_part;
-			mpc_ast_t *name_ast = mpc_ast_get_child(component_ast, "component_name|nonquoted_string|regex");
-			if (name_ast) {
-				brd_part.name = name_ast->contents;
+			char *component_name = get_nonquoted_or_quoted_string_child(component_ast, "component_name");
+			if (component_name) {
+				brd_part.name = component_name;
 			}
 
 			mpc_ast_t *place_ast = mpc_ast_get_child(component_ast, "place|>");
@@ -246,8 +246,8 @@ bool GenCADFile::parse_shape_pins_to_component(
 			mpc_ast_t *pin_ast = mpc_ast_get_child_lb(shape_ast, "shapes_pin|>", i);
 			if (pin_ast) {
 				mpc_ast_t *pos_ast      = mpc_ast_get_child(pin_ast, "x_y_ref|>");
-				mpc_ast_t *pin_name_ast = mpc_ast_get_child(pin_ast, "shape_pin_name|nonquoted_string|regex");
-				if (pos_ast && pin_name_ast) {
+				char *pin_name = get_nonquoted_or_quoted_string_child(pin_ast, "shape_pin_name");
+				if (pos_ast && pin_name) {
 					BRDPin pin;
 					pin.radius = 0.5;
 					// enable the code below once the pin.radius will be processed
@@ -262,7 +262,7 @@ bool GenCADFile::parse_shape_pins_to_component(
 					pin.part  = static_cast<unsigned int>(parts.size() + 1);
 					pin.pos.x = part->p1.x;
 					pin.pos.y = part->p1.y;
-					pin.snum  = pin_name_ast->contents;
+					pin.snum  = pin_name;
 
 					BRDPoint tmpPos{};
 					x_y_ref_to_brd_point(pos_ast, &tmpPos);
