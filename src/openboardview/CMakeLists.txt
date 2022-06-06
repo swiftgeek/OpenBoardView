@@ -81,6 +81,7 @@ set(SOURCES
 	FileFormats/CADFile.cpp
 	FileFormats/CSTFile.cpp
 	FileFormats/FZFile.cpp
+	FileFormats/GenCADFile.cpp
 	NetList.cpp
 	PartList.cpp
 	Renderers/Renderers.cpp
