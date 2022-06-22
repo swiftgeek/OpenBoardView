@@ -213,6 +213,9 @@ bool GenCADFile::parse_components() {
 						bool mirror_x         = has_text_content(mirror_ast, "MIRRORX");
 						bool mirror_y         = has_text_content(mirror_ast, "MIRRORY");
 						brd_part.part_type    = is_shape_smd(shape_ast) ? BRDPartType::SMD : BRDPartType::ThroughHole;
+						if ( brd_part.part_type == BRDPartType::ThroughHole ) {
+							brd_part.mounting_side = BRDPartMountingSide::Both;
+						}
 						parse_shape_pins_to_component(&brd_part, component_rotation_angle, mirror_x, mirror_y, shape_ast);
 						brd_part.end_of_pins = num_pins - 1;
 					}
@@ -277,6 +280,8 @@ bool GenCADFile::parse_shape_pins_to_component(
 					}
 					if (part->mounting_side == BRDPartMountingSide::Top) {
 						pin.side = BRDPinSide::Top;
+					} else if (part->mounting_side == BRDPartMountingSide::Both)  {
+						pin.side = BRDPinSide::Both;
 					} else {
 						pin.side = BRDPinSide::Bottom;
 					}
