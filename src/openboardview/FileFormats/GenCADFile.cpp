@@ -255,10 +255,10 @@ bool GenCADFile::parse_shape_pins_to_component(
 					mpc_ast_t *padstack_name_ast = mpc_ast_get_child(pin_ast, "pad_name|nonquoted_string|regex");
 					mpc_ast_t *padstack_ast = 0;
 					if (padstack_name_ast) {
-					    padstack_ast = get_padstack_by_name(padstack_name_ast->contents);
-					// enable the code below once the pin.radius will be processed
-					//    if (padstack_ast)
-					//       pin.radius = get_padstack_radius(padstack_ast);
+						padstack_ast = get_padstack_by_name(padstack_name_ast->contents);
+						// enable the code below once the pin.radius will be processed
+						//if (padstack_ast)
+						//	pin.radius = get_padstack_radius(padstack_ast);
 					}
 
 					// part is not yet added to the list at this point
