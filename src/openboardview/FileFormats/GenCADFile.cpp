@@ -280,7 +280,7 @@ bool GenCADFile::parse_shape_pins_to_component(
 						nc_counter++;
 					}
 					if (padstack_ast)
-						pin.side = get_padstack_side(padstack_ast, part);
+						pin.side = get_padstack_side(padstack_ast, part->mounting_side);
 					else if (part->mounting_side == BRDPartMountingSide::Top)
 						pin.side = BRDPinSide::Top;
 					else
@@ -536,6 +536,8 @@ int GenCADFile::board_unit_to_brd_coordinate(double brdUnit) {
 }
 
 bool GenCADFile::is_shape_smd(mpc_ast_t *shape_ast) {
+	bool top    = false;
+	bool bottom = false;
 	for (int i = 0; i >= 0;) {
 		i = mpc_ast_get_index_lb(shape_ast, "shapes_pin|>", i);
 		if (i >= 0) {
@@ -546,8 +548,14 @@ bool GenCADFile::is_shape_smd(mpc_ast_t *shape_ast) {
 			if (!pad_name) continue;
 
 			mpc_ast_t *padstack_ast = get_padstack_by_name(pad_name);
-			if (padstack_ast && !is_padstack_drilled(padstack_ast)) {
-				return false;
+			if (padstack_ast) {
+				BRDPinSide padstack_side = get_padstack_side(padstack_ast, BRDPartMountingSide::Top);
+				if (padstack_side == BRDPinSide::Both )
+					return false;
+				top     = (padstack_side == BRDPinSide::Top)    ? true : top;
+				bottom  = (padstack_side == BRDPinSide::Bottom) ? true : bottom;
+				if (top && bottom)
+					return false;
 			}
 			i++;
 		}
@@ -671,7 +679,7 @@ double GenCADFile::get_padstack_radius(mpc_ast_t *padstack_ast) {
 	return radius;
 }
 
-BRDPinSide GenCADFile::get_padstack_side(mpc_ast_t *padstack_ast, BRDPart *part) {
+BRDPinSide GenCADFile::get_padstack_side(mpc_ast_t *padstack_ast, BRDPartMountingSide mounting_side) {
 	// loop through all pads in a padstack to find determine side(s)
 	bool top    = false;
 	bool bottom = false;
@@ -693,13 +701,13 @@ BRDPinSide GenCADFile::get_padstack_side(mpc_ast_t *padstack_ast, BRDPart *part)
 	if ( ( top && bottom ) || ! is_padstack_drilled(padstack_ast) ) {
 		// THT/DUAL-SIDED/DRILL PAD
 		return BRDPinSide::Both;
-	} else if (part->mounting_side == BRDPartMountingSide::Top) {
+	} else if (mounting_side == BRDPartMountingSide::Top) {
 		if (top) {
 			return BRDPinSide::Top;
 		} else if (bottom) {
 			return BRDPinSide::Bottom;
 		}
-	} else if (part->mounting_side == BRDPartMountingSide::Bottom) {
+	} else if (mounting_side == BRDPartMountingSide::Bottom) {
 		if (top) {
 			return BRDPinSide::Bottom;
 		} else if (bottom) {
