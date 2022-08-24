@@ -256,6 +256,8 @@ bool GenCADFile::parse_shape_pins_to_component(
 					mpc_ast_t *padstack_ast = 0;
 					if (padstack_name_ast) {
 						padstack_ast = get_padstack_by_name(padstack_name_ast->contents);
+						//mpc_ast_print(padstack_ast);
+            get_padstack_side(padstack_ast);
 						// enable the code below once the pin.radius will be processed
 						//if (padstack_ast)
 						//	pin.radius = get_padstack_radius(padstack_ast);
@@ -282,9 +284,17 @@ bool GenCADFile::parse_shape_pins_to_component(
 					if (padstack_ast && !is_padstack_smd(padstack_ast)) {
 						pin.side = BRDPinSide::Both;
 					} else if (part->mounting_side == BRDPartMountingSide::Top) {
-						pin.side = BRDPinSide::Top;
+						pin.side = padstack_ast ? get_padstack_side(padstack_ast) : BRDPinSide::Top;
 					} else {
-						pin.side = BRDPinSide::Bottom;
+						if (padstack_ast) {
+							pin.side = get_padstack_side(padstack_ast);
+							if (pin.side == BRDPinSide::Top)
+								pin.side = BRDPinSide::Bottom;
+							else if (pin.side == BRDPinSide::Bottom)
+								pin.side = BRDPinSide::Top;
+						} else {
+							pin.side = BRDPinSide::Bottom;
+						}
 					}
 					pins.push_back(pin);
 					num_pins++;
@@ -671,6 +681,42 @@ double GenCADFile::get_padstack_radius(mpc_ast_t *padstack_ast) {
 	}
 	return radius;
 }
+
+BRDPinSide GenCADFile::get_padstack_side(mpc_ast_t *padstack_ast) {
+	// loop through all pads in a padstack to find determine side(s)
+	bool top    = false;
+	bool bottom = false;
+	for (int i = 0; i >= 0;) {
+		i = mpc_ast_get_index_lb(padstack_ast, "padstacks_pad|>", i);
+		if (i >= 0) {
+			mpc_ast_t *pad_ref_ast = mpc_ast_get_child_lb(padstack_ast, "padstacks_pad|>", i);
+			if (!pad_ref_ast) continue;
+
+			mpc_ast_t *layer_ast = mpc_ast_get_child(pad_ref_ast, "layer|string");
+			if (layer_ast) {
+				top         = has_text_content(layer_ast, "TOP")    ? true : top;
+				bottom      = has_text_content(layer_ast, "BOTTOM") ? true : bottom;
+			}
+			i++;
+		}
+	}
+
+	if ( top && bottom ) {
+		printf("THT/DUAL-SIDED PAD\n");
+		return BRDPinSide::Both;
+	} else if (top) {
+		printf("TOP PAD\n");
+		return BRDPinSide::Top;
+	} else if (bottom) {
+		printf("BOTTOM PAD\n");
+		return BRDPinSide::Bottom;
+	}
+	// TODO: Warning condition
+  printf("WARNING: This padstack has no outer copper side!");
+  // mpc print
+	return BRDPinSide::Top;
+}
+
 
 double GenCADFile::get_pad_radius(mpc_ast_t *pad_ast) {
 	double radius    = 0.5;
