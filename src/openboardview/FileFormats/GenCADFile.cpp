@@ -546,7 +546,7 @@ bool GenCADFile::is_shape_smd(mpc_ast_t *shape_ast) {
 			if (!pad_name) continue;
 
 			mpc_ast_t *padstack_ast = get_padstack_by_name(pad_name);
-			if (padstack_ast && !is_padstack_smd(padstack_ast)) {
+			if (padstack_ast && !is_padstack_drilled(padstack_ast)) {
 				return false;
 			}
 			i++;
@@ -610,8 +610,7 @@ char *GenCADFile::get_stringtoend_child(mpc_ast_t *parent, const char *name) {
 	return nullptr;
 }
 
-bool GenCADFile::is_padstack_smd(mpc_ast_t *padstack_ast) {
-  // TODO: Rename to is_padstack_drilled
+bool GenCADFile::is_padstack_drilled(mpc_ast_t *padstack_ast) {
 	mpc_ast_t *drill_size_ast = mpc_ast_get_child(padstack_ast, "drill_size|number|regex");
 	if (drill_size_ast) return atof(drill_size_ast->contents) == 0.0;
 	return false;
@@ -691,7 +690,7 @@ BRDPinSide GenCADFile::get_padstack_side(mpc_ast_t *padstack_ast, BRDPart *part)
 		}
 	}
 
-	if ( ( top && bottom ) || ! is_padstack_smd(padstack_ast) ) {
+	if ( ( top && bottom ) || ! is_padstack_drilled(padstack_ast) ) {
 		// THT/DUAL-SIDED/DRILL PAD
 		return BRDPinSide::Both;
 	} else if (part->mounting_side == BRDPartMountingSide::Top) {
