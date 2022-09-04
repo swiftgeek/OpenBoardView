@@ -210,10 +210,17 @@ bool GenCADFile::parse_components() {
 					brd_part.mfgcode += shape_name_str;
 					mpc_ast_t *shape_ast = get_shape_by_name(shape_name_str);
 					if (shape_ast) {
-						mpc_ast_t *mirror_ast = mpc_ast_get_child(shape_ref_ast, "mirror|string");
-						bool mirror_x         = has_text_content(mirror_ast, "MIRRORX");
-						bool mirror_y         = has_text_content(mirror_ast, "MIRRORY");
-						brd_part.part_type    = get_shape_type(shape_ast) == BRDPartType::SMD ? BRDPartType::SMD : BRDPartType::ThroughHole;
+						mpc_ast_t *mirror_ast  = mpc_ast_get_child(shape_ref_ast, "mirror|string");
+						bool mirror_x          = has_text_content(mirror_ast, "MIRRORX");
+						bool mirror_y          = has_text_content(mirror_ast, "MIRRORY");
+						BRDPartType shape_type = get_shape_type(shape_ast);
+						if (shape_type != BRDPartType::None)
+							brd_part.part_type     = shape_type;
+						else {
+							// BRDPartType::None - Skip as this part does not contain electrical/mechanical pads
+							i++;
+							continue;
+						}
 						parse_shape_pins_to_component(&brd_part, component_rotation_angle, mirror_x, mirror_y, shape_ast);
 						if ( brd_part.part_type == BRDPartType::ThroughHole ) {
 							brd_part.mounting_side = BRDPartMountingSide::Both;
@@ -539,7 +546,10 @@ BRDPartType GenCADFile::get_shape_type(mpc_ast_t *shape_ast) {
 			i++;
 		}
 	}
-	return BRDPartType::SMD;
+	if (top || bottom)
+		return BRDPartType::SMD;
+	else
+		return BRDPartType::None;
 }
 
 char *GenCADFile::get_nonquoted_or_quoted_string_child(mpc_ast_t *parent, const char *name) {
