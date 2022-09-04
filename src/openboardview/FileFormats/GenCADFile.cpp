@@ -213,7 +213,7 @@ bool GenCADFile::parse_components() {
 						mpc_ast_t *mirror_ast = mpc_ast_get_child(shape_ref_ast, "mirror|string");
 						bool mirror_x         = has_text_content(mirror_ast, "MIRRORX");
 						bool mirror_y         = has_text_content(mirror_ast, "MIRRORY");
-						brd_part.part_type    = is_shape_smd(shape_ast) ? BRDPartType::SMD : BRDPartType::ThroughHole;
+						brd_part.part_type    = get_shape_type(shape_ast) == BRDPartType::SMD ? BRDPartType::SMD : BRDPartType::ThroughHole;
 						parse_shape_pins_to_component(&brd_part, component_rotation_angle, mirror_x, mirror_y, shape_ast);
 						if ( brd_part.part_type == BRDPartType::ThroughHole ) {
 							brd_part.mounting_side = BRDPartMountingSide::Both;
@@ -514,7 +514,7 @@ int GenCADFile::board_unit_to_brd_coordinate(double brdUnit) {
 	return static_cast<int>(brdUnit);
 }
 
-bool GenCADFile::is_shape_smd(mpc_ast_t *shape_ast) {
+BRDPartType GenCADFile::get_shape_type(mpc_ast_t *shape_ast) {
 	bool top    = false;
 	bool bottom = false;
 	for (int i = 0; i >= 0;) {
@@ -530,16 +530,16 @@ bool GenCADFile::is_shape_smd(mpc_ast_t *shape_ast) {
 			if (padstack_ast) {
 				BRDPinSide padstack_side = get_padstack_side(padstack_ast, BRDPartMountingSide::Top);
 				if (padstack_side == BRDPinSide::Both )
-					return false;
+					return BRDPartType::ThroughHole;
 				top     = (padstack_side == BRDPinSide::Top)    ? true : top;
 				bottom  = (padstack_side == BRDPinSide::Bottom) ? true : bottom;
 				if (top && bottom)
-					return false;
+					return BRDPartType::ThroughHole;
 			}
 			i++;
 		}
 	}
-	return true;
+	return BRDPartType::SMD;
 }
 
 char *GenCADFile::get_nonquoted_or_quoted_string_child(mpc_ast_t *parent, const char *name) {
@@ -694,11 +694,9 @@ BRDPinSide GenCADFile::get_padstack_side(mpc_ast_t *padstack_ast, BRDPartMountin
 			return BRDPinSide::Top;
 		}
 	}
-	// TODO: Warning condition
-	printf("WARNING: This padstack has no outer copper side!");
+	printf("WARNING: This padstack has no outer copper side nor drill holes!\n");
 	mpc_ast_print(padstack_ast);
-	return BRDPinSide::Top; //TODO: return None or sth, but what about just drill hole?
-                          // maybe check with GenCADFile::is_padstack_smd first and return both in that case?
+	return BRDPinSide::None;
 }
 
 double GenCADFile::get_pad_radius(mpc_ast_t *pad_ast) {
